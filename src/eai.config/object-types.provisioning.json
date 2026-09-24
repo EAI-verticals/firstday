@@ -1,0 +1,34 @@
+[
+  {
+    "tenantKey": "vending-machine-app",
+    "declaredBackends": [
+      "postgresql"
+    ],
+    "objectTypesByBackend": {
+      "postgresql": [
+        "Record"
+      ],
+      "documentdb": [],
+      "blob": [],
+      "search": []
+    },
+    "objectTypeIdentifiersByBackend": {
+      "postgresql": [
+        {
+          "name": "Record",
+          "slug": "record"
+        }
+      ],
+      "documentdb": [],
+      "blob": [],
+      "search": []
+    },
+    "provision": {
+      "postgresql": true,
+      "documentdb": false,
+      "blob": false,
+      "search": false
+    },
+    "notes": []
+  }
+]

@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@images/*": ["./public/images/*"],
+      "@presentation/*": ["./src/app/(presentation)/*"],
+      "@infrastructure/*": ["./src/app/(infrastructure)/*"],
+      "@application/*": ["./src/app/application/*"],
+      "@domain/*": ["./src/app/domain/*"],
+      "@tests/*": ["./tests/*"],
+      "@public/*": ["./public/*"],
+      "@platform-sdk/*": ["./packages/platform-sdk/src/*"],
+      "@enterpriseaigroup/platform-sdk": ["./packages/platform-sdk/src"]
+    }
+  },
+  "include": [
+  "next-env.d.ts",
+  "**/*.ts",
+  "**/*.tsx",
+  "**/*.d.ts",
+    ".next/types/**/*.ts",
+    "jest.setup.js",
+    "src/middleware.back",
+    "server.ts"
+  ],
+  "exclude": ["node_modules", "./node_modules", "./node_modules/*", "docs-site"]
+}

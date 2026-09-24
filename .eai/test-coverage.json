@@ -1,0 +1,102 @@
+{
+  "schema": "eai.test_coverage_map.v1",
+  "repositories": {
+    "eai-app-template": {
+      "intentional_skipped_tests": [],
+      "features": [
+        {
+          "id": "canonical-object-type-routing",
+          "description": "The template validates exact Object Type name/slug pairs and routes every SDK resource identifier through the canonical v1 slug owner.",
+          "owned_paths": [
+            "packages/platform-sdk/src/resource-routing.ts",
+            "packages/platform-sdk/src/object-types.ts",
+            "packages/platform-sdk/src/modules/resources.ts",
+            "packages/platform-sdk/src/types.ts",
+            "scripts/generate-object-types-json.mjs",
+            "src/eai.config/object-types.ts",
+            "src/eai.config/object-types.json",
+            "src/eai.config/object-types.provisioning.json",
+            "src/lib/platform/verify-platform.ts"
+          ],
+          "required_repo_tests": [
+            "packages/platform-sdk/__tests__/object-types.test.ts",
+            "packages/platform-sdk/__tests__/resources.test.ts",
+            "tests/generate-object-types-json.test.mjs",
+            "src/lib/platform/verify-platform.test.ts"
+          ],
+          "required_ci_checks": ["validate"],
+          "required_cross_service_surfaces": ["backend"]
+        },
+        {
+          "id": "generated-app-object-type-seeding",
+          "description": "Generated apps seed tenant-scoped Object Types with owner-private and shared-private authorization metadata.",
+          "owned_paths": [
+            "src/eai.config/object-types.ts",
+            "src/lib/platform/seed-object-types.ts"
+          ],
+          "required_repo_tests": ["src/lib/platform/seed-object-types.test.ts"],
+          "required_ci_checks": ["validate"],
+          "required_cross_service_surfaces": [
+            "adminportal-generated-app-builder-export"
+          ]
+        },
+        {
+          "id": "generated-app-platform-sdk-resource-count-policy",
+          "description": "Generated apps can opt out of exact ResourceAPI totals while preserving exact-count behavior for existing list callers.",
+          "owned_paths": [
+            "packages/platform-sdk/src/modules/resources.ts",
+            "packages/platform-sdk/src/types.ts"
+          ],
+          "required_repo_tests": [
+            "packages/platform-sdk/__tests__/resources.test.ts"
+          ],
+          "required_ci_checks": ["validate"],
+          "required_cross_service_surfaces": ["backend"],
+          "required_deployed_contracts": [
+            {
+              "repository": "eai-testing-dev",
+              "path": "tests/cross-service/contracts/backend/v4-data-resources-authz.spec.ts"
+            }
+          ]
+        },
+        {
+          "id": "generated-workflow-anonymous-container-runtime",
+          "description": "Generated NCB apps render an immutable workflow snapshot, use an ACA managed-identity BFF for anonymous submissions and files, and expose semantic readiness proof.",
+          "owned_paths": [
+            "src/app/globals.css",
+            "src/app/home-client.tsx",
+            "src/app/page.tsx",
+            "src/app/api/eai/readiness/route.ts",
+            "src/app/api/eai/generated-workflow/readiness/**",
+            "src/app/api/eai/workflow-submissions/**",
+            "src/components/generated-workflow/**",
+            "src/eai.config/index.ts",
+            "src/lib/generated-workflow/**"
+          ],
+          "required_repo_tests": [
+            "src/app/globals.test.ts",
+            "src/app/home-client.test.tsx",
+            "src/app/api/eai/generated-workflow/readiness/route.test.ts",
+            "src/app/api/eai/readiness/route.test.ts",
+            "src/app/api/eai/workflow-submissions/route.test.ts",
+            "src/components/generated-workflow/workflow-form.test.tsx",
+            "src/lib/generated-workflow/bounded-body.test.ts",
+            "src/lib/generated-workflow/platform.test.ts",
+            "src/lib/generated-workflow/public-guards.test.ts",
+            "src/lib/generated-workflow/runtime-contract.test.ts",
+            "src/lib/generated-workflow/server-configuration.test.ts",
+            "src/lib/generated-workflow/submission-session.test.ts"
+          ],
+          "required_ci_checks": ["validate"],
+          "required_cross_service_surfaces": ["admin-portal"],
+          "required_deployed_contracts": [
+            {
+              "repository": "eai-testing-dev",
+              "path": "tests/cross-service/contracts/adminportal-adminapi/generated-workflow-public-routes.spec.ts"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

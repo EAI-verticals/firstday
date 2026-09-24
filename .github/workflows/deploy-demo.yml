@@ -1,0 +1,78 @@
+# Deploy Vending Machine App to Azure App Service
+# Triggers on push to main branch
+#
+# Required GitHub Secrets (in "demo" environment):
+#   AZUREAPPSERVICE_CLIENTID     — Azure AD app registration client ID
+#   AZUREAPPSERVICE_TENANTID     — Azure AD tenant ID
+#   AZUREAPPSERVICE_SUBSCRIPTIONID — Azure subscription ID
+#   AZURE_RESOURCE_GROUP         — Azure resource group name
+#   AZURE_WEBAPP_NAME            — Azure App Service name
+
+name: Deploy Vending Machine App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  APP_NAME: vending-machine-app
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: demo
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Object Types JSON
+        run: npm run build:object-types
+
+      - name: Build
+        run: npm run build
+        env:
+          APP_BASE_PATH: /${{ env.APP_NAME }}
+
+      - name: Package standalone output
+        run: |
+          mkdir -p deploy/${{ env.APP_NAME }}
+          cp -r .next/standalone/. deploy/${{ env.APP_NAME }}/
+          cp -r .next/static deploy/${{ env.APP_NAME }}/.next/
+          cp -r public deploy/${{ env.APP_NAME }}/ 2>/dev/null || true
+          cd deploy && zip -r ../app-content.zip ${{ env.APP_NAME }}
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+
+      - name: Deploy to Azure
+        run: |
+          az webapp deploy \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+            --src-path app-content.zip \
+            --type zip \
+            --target-path /home/site/wwwroot/${{ env.APP_NAME }}
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }}

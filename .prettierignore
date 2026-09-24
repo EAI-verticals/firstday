@@ -1,0 +1,24 @@
+.next
+.cache
+package-lock.json
+public
+node_modules
+next-env.d.ts
+next.config.ts
+yarn.lock
+ .husky
+ coverage
+ .prettierignore
+ .stylelintignore
+ .eslintignore
+ stories
+ storybook-static
+ *.log
+ playwright-report
+ .nyc_output
+ test-results
+ docs
+ .last_package_hash
+dist
+build
+pnpm-lock.yaml

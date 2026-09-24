@@ -1,0 +1,86 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+.eai-build/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# environment variables
+.env*
+!.env.example
+
+# npm secret overrides (use .npmrc.local for tokens)
+# .npmrc itself is committed — it contains only the registry URL, no secrets
+.npmrc.local
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+*storybook.log
+/storybook-static/
+
+# Package Hash
+.last_package_hash
+/last_package_hash
+/.last_package_hash
+.claude/settings.local.json
+
+/packages/client/dist
+/packages/client/node_modules
+/packages/client/.npmrc
+
+
+# VS Code
+.vscode/
+
+# Log files
+*.log
+mcp_sharepoint.log
+
+# Gofer runtime files (auto-generated, should not be committed)
+.specify/hooks/
+.specify/memory/local.json
+.specify/memory/dependency-graph.json
+.specify/specs/*/.branch-info.json
+.specify/logs/
+.specify/memory/checkpoints/
+.specify/memory/context-health-state.json
+.specify/memory/observation-cache/
+.specify/specs/*/research-index.json

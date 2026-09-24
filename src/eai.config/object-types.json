@@ -1,0 +1,143 @@
+{
+  "vending-machine-app": [
+    {
+      "name": "Record",
+      "slug": "record",
+      "displayName": "Record",
+      "description": "A sample record — replace with your domain model",
+      "schemaVersion": 1,
+      "storageBackend": "postgresql",
+      "storageMetadataStatus": "ready",
+      "storageBinding": {
+        "sql": {
+          "databaseAlias": "tenant-postgres",
+          "tenantSchemaStrategy": "per-tenant-schema",
+          "tableName": "d3ad7caa7d71_vending_machine_app_records"
+        }
+      },
+      "properties": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "indexed": true,
+          "description": "Title of this record"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "description": "Detailed description"
+        },
+        {
+          "name": "priority",
+          "type": "number",
+          "required": false,
+          "defaultValue": 0,
+          "description": "Priority level (0 = normal)"
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "required": true,
+          "defaultValue": true,
+          "description": "Whether this record is active"
+        },
+        {
+          "name": "dueDate",
+          "type": "date",
+          "required": false,
+          "description": "Target completion date"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "defaultValue": "draft",
+          "options": [
+            {
+              "label": "Draft",
+              "value": "draft"
+            },
+            {
+              "label": "In Progress",
+              "value": "in-progress"
+            },
+            {
+              "label": "Complete",
+              "value": "complete"
+            },
+            {
+              "label": "Archived",
+              "value": "archived"
+            }
+          ],
+          "description": "Current lifecycle status"
+        },
+        {
+          "name": "metadata",
+          "type": "json",
+          "required": false,
+          "description": "Arbitrary metadata (tags, notes, etc.)"
+        },
+        {
+          "name": "assignedTo",
+          "type": "relationship",
+          "required": false,
+          "indexed": true,
+          "description": "User ID of the assignee"
+        }
+      ],
+      "linkTypes": [],
+      "actions": [
+        {
+          "name": "submit",
+          "displayName": "Submit",
+          "requiredRole": "tenant-viewer",
+          "validationRules": {
+            "requiredFields": [
+              "title"
+            ],
+            "requiredStatus": "draft"
+          },
+          "sideEffects": [
+            {
+              "type": "set_field",
+              "field": "status",
+              "value": "in-progress"
+            },
+            {
+              "type": "set_timestamp",
+              "field": "dueDate"
+            },
+            {
+              "type": "set_user",
+              "field": "assignedTo"
+            }
+          ]
+        },
+        {
+          "name": "complete",
+          "displayName": "Mark Complete",
+          "requiredRole": "tenant-builder",
+          "validationRules": {
+            "requiredStatus": "in-progress"
+          },
+          "sideEffects": [
+            {
+              "type": "set_field",
+              "field": "status",
+              "value": "complete"
+            },
+            {
+              "type": "set_field",
+              "field": "isActive",
+              "value": false
+            }
+          ]
+        }
+      ],
+      "status": "published"
+    }
+  ]
+}

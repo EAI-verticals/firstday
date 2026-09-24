@@ -1,0 +1,160 @@
+{
+  "$schema": "https://eai-support.github.io/eai/schemas/eai.runtime.schema.json",
+  "schemaVersion": 1,
+  "name": "eai-app-template",
+  "runtime": {
+    "framework": "nextjs",
+    "minimumNodeVersion": "20"
+  },
+  "schemaProvenance": {
+    "templateVersion": "0.1.0",
+    "baseTemplateSha": "3fa18d004b20ff409ab9687d623028f24d9e5543",
+    "schemaDigest": "sha256:acfb58ff43dc69923c642338031d169cb93c669cd99cdf159c3af42e88c2bdf5",
+    "validatorDigest": "sha256:47ad55b69d7fbe8e9e2c5dcb156b1198f759ffb478f4e8ee8ca1e874c77df819"
+  },
+  "capabilities": {
+    "authjsEntraSignIn": true,
+    "publicApiBffAccess": true,
+    "tenantWorkflowConfiguration": true,
+    "serviceIdentity": false,
+    "publicAnonymousEndpointsRequireServerPlatformAccess": false
+  },
+  "environment": {
+    "required": [
+      "NEXT_PUBLIC_APP_NAME",
+      "APP_BASE_PATH",
+      "NEXT_PUBLIC_APP_BASE_PATH",
+      "NEXT_PUBLIC_EAI_TENANT_ID",
+      "BASE_URL_PUBLIC_API",
+      "ROUTING_BOOTSTRAP_PUBLIC_API_URL",
+      "EAI_PRODUCT_SLUG",
+      "EAI_ENVIRONMENT",
+      "EAI_CONFIG_HASH",
+      "TENANT_KEYS",
+      "ENTRA_TENANT_NAME",
+      "ENTRA_TENANT_ID",
+      "ENTRA_CLIENT_ID",
+      "ENTRA_SCOPES",
+      "AUTH_URL",
+      "AUTH_TRUST_HOST"
+    ],
+    "tenantKeyPattern": {
+      "keysEnv": "TENANT_KEYS",
+      "tenantIdEnv": "TENANT_{KEY}_ID",
+      "workflowIdEnv": "WORKFLOW_{KEY}_ID"
+    }
+  },
+  "secrets": {
+    "required": [
+      "AUTH_SECRET",
+      "ENTRA_CLIENT_SECRET",
+      "EAI_READINESS_PROBE_TOKEN"
+    ],
+    "optional": [],
+    "declarations": {
+      "required": [
+        {
+          "name": "AUTH_SECRET",
+          "purpose": "auth",
+          "required": true,
+          "environments": ["dev", "test", "prod", "demo"],
+          "restartRequired": true,
+          "displayName": "Auth.js session signing secret",
+          "secretRef": {
+            "kind": "tenant-infra-envelope",
+            "name": "AUTH_SECRET"
+          }
+        },
+        {
+          "name": "ENTRA_CLIENT_SECRET",
+          "purpose": "auth",
+          "required": true,
+          "environments": ["dev", "test", "prod", "demo"],
+          "restartRequired": true,
+          "displayName": "Microsoft Entra client secret",
+          "secretRef": {
+            "kind": "tenant-infra-envelope",
+            "name": "ENTRA_CLIENT_SECRET"
+          }
+        },
+        {
+          "name": "EAI_READINESS_PROBE_TOKEN",
+          "purpose": "readiness-probe-auth",
+          "required": true,
+          "environments": ["dev", "test", "prod", "demo"],
+          "restartRequired": true,
+          "displayName": "TenantInfra readiness probe bearer token",
+          "secretRef": {
+            "kind": "tenant-infra-envelope",
+            "name": "EAI_READINESS_PROBE_TOKEN"
+          }
+        }
+      ],
+      "optional": []
+    }
+  },
+  "auth": {
+    "provider": "authjs",
+    "callbackPath": "/api/auth/callback/microsoft-entra-id"
+  },
+  "platform": {
+    "publicApiBaseUrlEnv": "BASE_URL_PUBLIC_API",
+    "bootstrapPublicApiUrlEnv": "ROUTING_BOOTSTRAP_PUBLIC_API_URL",
+    "bffBasePath": "/api/eai",
+    "runtimeConfigEndpoint": "/api/eai/config",
+    "tenantKeysEnv": "TENANT_KEYS"
+  },
+  "endpoints": {
+    "health": "/health",
+    "readiness": "/api/eai/readiness",
+    "authProviders": "/api/auth/providers",
+    "runtimeConfig": "/api/eai/config",
+    "bffBasePath": "/api/eai",
+    "public": [
+      {
+        "path": "/api/eai/config",
+        "method": "GET",
+        "serverSidePlatformAccess": false
+      }
+    ],
+    "smokeTests": [
+      {
+        "name": "health",
+        "method": "GET",
+        "path": "/health",
+        "expectedStatus": 200,
+        "category": "app_not_running"
+      },
+      {
+        "name": "readiness",
+        "method": "GET",
+        "path": "/api/eai/readiness",
+        "expectedStatus": 200,
+        "headers": {
+          "x-eai-readiness-probe": "tenantinfra",
+          "x-eai-tenant-id": "${NEXT_PUBLIC_EAI_TENANT_ID}",
+          "x-eai-app-key": "${EAI_PRODUCT_SLUG}",
+          "x-eai-environment": "${EAI_ENVIRONMENT}",
+          "x-eai-config-hash": "${EAI_CONFIG_HASH}",
+          "authorization": "Bearer ${EAI_READINESS_PROBE_TOKEN}"
+        },
+        "requiresSecret": "EAI_READINESS_PROBE_TOKEN",
+        "category": "config_missing"
+      },
+      {
+        "name": "auth-providers",
+        "method": "GET",
+        "path": "/api/auth/providers",
+        "expectedStatus": 200,
+        "category": "authjs_config"
+      },
+      {
+        "name": "runtime-config",
+        "method": "GET",
+        "path": "/api/eai/config",
+        "expectedStatus": 200,
+        "category": "tenant_workflow_config"
+      }
+    ]
+  }
+}

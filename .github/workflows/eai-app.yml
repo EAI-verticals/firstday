@@ -1,0 +1,224 @@
+name: EAI App Source-Unknown Handoff
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_key:
+        description: EAI app key to bind.
+        required: true
+      tenant_id:
+        description: Company tenant ID that owns the app enrollment.
+        required: true
+      operation_id:
+        description: Operation ID from eai app workflow-setup.
+        required: true
+      nonce:
+        description: One-time nonce from eai app workflow-setup.
+        required: true
+      environment:
+        description: Deployment environment to bind.
+        required: true
+        default: preview
+      release_channel:
+        description: Release channel for the deployment handoff.
+        required: true
+        default: preview
+      publicapi_base_url:
+        description: Optional PublicAPI base URL override.
+        required: false
+  workflow_call:
+    inputs:
+      app_key:
+        required: true
+        type: string
+      tenant_id:
+        required: true
+        type: string
+      operation_id:
+        required: true
+        type: string
+      nonce:
+        required: true
+        type: string
+      environment:
+        required: false
+        type: string
+        default: preview
+      release_channel:
+        required: false
+        type: string
+        default: preview
+      publicapi_base_url:
+        required: false
+        type: string
+    secrets:
+      EAI_ACCESS_TOKEN:
+        required: true
+      EAI_PUBLIC_API_URL:
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: eai-app-source-unknown-${{ inputs.app_key }}-${{ inputs.environment }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  EAI_WORKFLOW_PATH: .github/workflows/eai-app.yml
+
+jobs:
+  build-and-handoff:
+    runs-on: ubuntu-latest
+    env:
+      APP_KEY: ${{ inputs.app_key }}
+      TENANT_ID: ${{ inputs.tenant_id }}
+      OPERATION_ID: ${{ inputs.operation_id }}
+      NONCE: ${{ inputs.nonce }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      RELEASE_CHANNEL: ${{ inputs.release_channel }}
+      BASE_URL_PUBLIC_API: ${{ inputs.publicapi_base_url || secrets.EAI_PUBLIC_API_URL }}
+      EAI_ACCESS_TOKEN: ${{ secrets.EAI_ACCESS_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Configure npm for GitHub Packages
+        run: |
+          echo "@enterpriseaigroup:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Linux native CSS bindings
+        run: npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.18
+
+      - name: Install EAI CLI
+        run: npm install -g @enterpriseai/cli
+
+      - name: Build object types
+        run: npm run build:object-types
+
+      - name: Build generated app
+        run: npm run build
+
+      - name: Prepare image context
+        run: node scripts/source-unknown-deployment-evidence.mjs prepare-image-context
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build OCI image archive
+        run: |
+          mkdir -p .eai-build
+          docker buildx build \
+            --file .eai-build/image-context/Dockerfile \
+            --output type=oci,dest=.eai-build/eai-app-image.oci.tar \
+            .eai-build/image-context
+
+      - name: Collect immutable build evidence
+        id: evidence
+        run: |
+          node scripts/source-unknown-deployment-evidence.mjs collect \
+            --app-key "$APP_KEY" \
+            --tenant-id "$TENANT_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow "$EAI_WORKFLOW_PATH" \
+            --ref "$GITHUB_REF" \
+            --branch "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --workflow-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --environment "$DEPLOY_ENVIRONMENT"
+
+      - name: Upload immutable build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: eai-source-unknown-build-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            .eai-build/eai-app-build.tar.gz
+            .eai-build/eai-app-image.oci.tar
+            .eai-build/evidence/source-unknown-deployment-evidence.json
+
+      - name: Request GitHub OIDC token
+        id: github-oidc
+        env:
+          AUDIENCE: api://enterprise-ai-publicapi/source-unknown
+        run: |
+          response="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${AUDIENCE}")"
+          token="$(node -e "let s=''; process.stdin.on('data', d => s += d); process.stdin.on('end', () => process.stdout.write(JSON.parse(s).value));" <<< "$response")"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - name: Submit workflow evidence
+        run: |
+          mkdir -p .eai-build/evidence
+          eai app workflow-evidence "$APP_KEY" \
+            --tenant-id "$TENANT_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --operation-id "$OPERATION_ID" \
+            --nonce "$NONCE" \
+            --environment "$DEPLOY_ENVIRONMENT" \
+            --branch "$GITHUB_REF_NAME" \
+            --workflow "$EAI_WORKFLOW_PATH" \
+            --ref "$GITHUB_REF" \
+            --commit "$GITHUB_SHA" \
+            --config-hash "${{ steps.evidence.outputs.config_hash }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact_digest }}" \
+            --image-digest "${{ steps.evidence.outputs.image_digest }}" \
+            --template-version "${{ steps.evidence.outputs.template_version }}" \
+            --base-template-sha "${{ steps.evidence.outputs.base_template_sha }}" \
+            --schema-digest "${{ steps.evidence.outputs.schema_digest }}" \
+            --validator-digest "${{ steps.evidence.outputs.validator_digest }}" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --workflow-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --github-oidc-token "${{ steps.github-oidc.outputs.token }}" \
+            --format json \
+            | tee .eai-build/evidence/workflow-evidence-response.json
+
+      - name: Request deployment handoff
+        run: |
+          eai app deploy-source-unknown "$APP_KEY" \
+            --tenant-id "$TENANT_ID" \
+            --operation-id "$OPERATION_ID" \
+            --environment "$DEPLOY_ENVIRONMENT" \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow "$EAI_WORKFLOW_PATH" \
+            --ref "$GITHUB_REF" \
+            --commit "$GITHUB_SHA" \
+            --workflow-run-id "$GITHUB_RUN_ID" \
+            --config-hash "${{ steps.evidence.outputs.config_hash }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact_digest }}" \
+            --image-digest "${{ steps.evidence.outputs.image_digest }}" \
+            --target-kind tenantinfra \
+            --release-channel "$RELEASE_CHANNEL" \
+            --format json \
+            | tee .eai-build/evidence/deployment-handoff-response.json
+
+      - name: Assert TenantInfra handoff submitted
+        run: |
+          node scripts/source-unknown-deployment-evidence.mjs assert-handoff-submitted \
+            --response .eai-build/evidence/deployment-handoff-response.json
+
+      - name: Upload handoff responses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eai-source-unknown-handoff-${{ github.run_id }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            .eai-build/evidence/workflow-evidence-response.json
+            .eai-build/evidence/deployment-handoff-response.json

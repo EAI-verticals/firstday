@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eai-app-template-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Configure npm for GitHub Packages
+        run: |
+          echo "@enterpriseaigroup:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+      - name: Install dependencies
+        # npm ci can miss optional native bindings used by Tailwind/Next on Ubuntu.
+        run: npm install
+
+      - name: Install Linux native CSS bindings
+        run: npm install --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.18
+
+      - name: Build object types
+        run: npm run build:object-types
+
+      - name: Object type generator regression test
+        run: npm run test:object-types-generator
+
+      - name: Unit tests
+        run: npm run test:unit:ci
+
+      - name: Source-unknown handoff evidence test
+        run: npm run test:source-unknown-evidence
+
+      - name: AI workspace handoff guidance test
+        run: npm run test:ai-workspace-guidance
+
+      - name: Cross-platform lifecycle test
+        run: npm run test:cross-platform-lifecycle
+
+      - name: Issue attachment moderation test
+        run: node --test tests/issue-attachment-moderation.test.cjs
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
