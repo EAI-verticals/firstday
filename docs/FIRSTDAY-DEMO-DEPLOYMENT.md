@@ -66,3 +66,9 @@ Health confirms the server is running. It does not prove sign-in, AI or data acc
 ## Current prerequisites
 
 The repository initially had no deployment secrets. Current GitHub account cannot inspect organization secrets, and current Azure account cannot read demo Key Vault metadata. An infrastructure owner must make the existing deployment credential available. The EAI CLI session was expired during preparation; the prior sign-in request remains pending. No broad role assignment or secret-access bypass is authorized by these instructions.
+
+## Preparation verification
+
+The compatible dependency updates use Next.js 15.5.27, next-auth 5.0.0-beta.32 and @auth/core 0.41.3. EAI SDK versions are unchanged. The Linux amd64 container passed 437 tests in 63 suites, production lint, type checks and build. Local container checks returned HTTP 200 for the homepage, logo and health route. The image runs as uid 1001 and excludes local environment files.
+
+The lockfile still reports 57 advisories, including two critical development-tool entries for Vitest/Tinypool. Both package directories are absent from the final image. The nested Next.js PostCSS 8.4.31 advisory remains unresolved. This preparation does not claim zero vulnerabilities or hosted readiness. Assess remaining runtime exposure before a public release decision.

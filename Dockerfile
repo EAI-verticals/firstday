@@ -4,11 +4,12 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV APP_BASE_PATH=""
 ENV NEXT_PUBLIC_APP_BASE_PATH=""
-ENV NEXT_PUBLIC_APP_NAME=Firstday
 
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 COPY . .
+RUN npm test -- --runInBand
+ENV NEXT_PUBLIC_APP_NAME=Firstday
 RUN npm run build
 
 FROM node:24-alpine AS runner
