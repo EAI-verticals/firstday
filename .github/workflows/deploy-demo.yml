@@ -32,7 +32,13 @@ jobs:
       - run: node scripts/demo-deployment.mjs check
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      - run: npm ci --ignore-scripts && npm run test:unit:ci && npm run typecheck && npm run build
+      - run: npm ci --ignore-scripts
+        env:
+          CYPRESS_INSTALL_BINARY: '0'
+      - run: npm run test:unit:ci && npm run typecheck
+        env:
+          EAI_TENANT_ID: ''
+      - run: npm run build
         env:
           CYPRESS_INSTALL_BINARY: '0'
           NEXT_PUBLIC_EAI_TENANT_ID: ${{ vars.EAI_TENANT_ID }}
