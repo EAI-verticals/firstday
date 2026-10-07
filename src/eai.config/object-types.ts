@@ -41,7 +41,15 @@
  * └────────────┴─────────────────────────────────────────────────┘
  */
 
-export type FieldType = 'text' | 'number' | 'boolean' | 'date' | 'select' | 'json' | 'file' | 'relationship';
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'select'
+  | 'json'
+  | 'file'
+  | 'relationship';
 
 export interface SelectOption {
   label: string;
@@ -58,7 +66,11 @@ export interface PropertyDefinition {
   description?: string;
 }
 
-export type Cardinality = 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';
+export type Cardinality =
+  | 'one-to-one'
+  | 'one-to-many'
+  | 'many-to-one'
+  | 'many-to-many';
 
 export interface LinkTypeDefinition {
   name: string;
@@ -106,6 +118,10 @@ export interface ObjectTypeDefinition {
   schemaVersion?: number;
   storageMetadataStatus?: 'draft' | 'ready';
   storageBinding?: {
+    blob?: {
+      storageAccountAlias: 'tenant-blob';
+      containerName: string;
+    };
     sql?: {
       databaseAlias: 'tenant-postgres';
       tenantSchemaStrategy: 'per-tenant-schema';
@@ -130,6 +146,34 @@ const postgresqlResourceStorage = {
 
 export const objectTypes: Record<string, ObjectTypeDefinition[]> = {
   'vending-machine-app': [
+    {
+      name: 'OnboardingDocument',
+      slug: 'onboarding-document',
+      displayName: 'Onboarding document',
+      description:
+        'Employee-owned identity file and extracted fields for review.',
+      authorization: { privacyClass: 'owner_private' },
+      storageBackend: 'blob',
+      schemaVersion: 1,
+      storageMetadataStatus: 'ready',
+      storageBinding: {
+        blob: {
+          storageAccountAlias: 'tenant-blob',
+          containerName: 'd3ad7caa7d71-vending-machine-app-documents',
+        },
+      },
+      properties: [
+        { name: 'filename', type: 'text', required: true },
+        { name: 'documentTypeKey', type: 'text', required: true },
+        { name: 'file', type: 'file', required: false },
+        { name: 'status', type: 'text', required: true },
+        { name: 'extractedFields', type: 'json', required: false },
+        { name: 'analysedAt', type: 'date', required: false },
+      ],
+      linkTypes: [],
+      actions: [],
+      status: 'published',
+    },
     {
       name: 'Record',
       slug: 'record',
@@ -208,7 +252,11 @@ export const objectTypes: Record<string, ObjectTypeDefinition[]> = {
             requiredStatus: 'draft',
           },
           sideEffects: [
-            { type: 'set_field' as const, field: 'status', value: 'in-progress' },
+            {
+              type: 'set_field' as const,
+              field: 'status',
+              value: 'in-progress',
+            },
             { type: 'set_timestamp' as const, field: 'dueDate' },
             { type: 'set_user' as const, field: 'assignedTo' },
           ],
@@ -238,7 +286,6 @@ export const objectTypes: Record<string, ObjectTypeDefinition[]> = {
       },
       status: 'published' as const,
     },
-
   ],
 
   // ── Dual-tenant example (uncomment if using dual tenant structure) ──

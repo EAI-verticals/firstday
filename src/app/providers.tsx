@@ -28,7 +28,12 @@ const RUNTIME_CONFIG_ENDPOINT = `${NEXT_PUBLIC_BASE_PATH}/api/eai/config`;
 
 export function Providers({ children, tenants }: ProvidersProps) {
   return (
-    <SessionProvider basePath={SESSION_BASE_PATH}>
+    <SessionProvider
+      basePath={SESSION_BASE_PATH}
+      refetchInterval={300}
+      refetchOnWindowFocus
+      refetchWhenOffline={false}
+    >
       <DemoProvider
         tenants={tenants}
         runtimeConfigEndpoint={RUNTIME_CONFIG_ENDPOINT}

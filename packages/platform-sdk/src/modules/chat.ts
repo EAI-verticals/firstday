@@ -43,6 +43,7 @@ export class ChatModule {
       'ai_config',
       'vertical_key',
       'use_context_enrichment',
+      'include_citations',
       'integrations',
       'document_scope',
       'business_request_id',

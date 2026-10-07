@@ -154,8 +154,24 @@ export async function resolvePublicApiBaseUrl(
   }
 
   if (payload.status === 'resolved' && payload.apiBaseUrl) {
+    let resolvedBaseUrl =
+      normalizeBaseUrl(payload.apiBaseUrl) ?? payload.apiBaseUrl;
+    // The resolver can return the regional origin while the gateway is mounted
+    // at /public. Preserve the configured mount only on that same origin.
+    if (fallbackBaseUrl) {
+      const resolved = new URL(resolvedBaseUrl);
+      const configured = new URL(fallbackBaseUrl);
+      if (
+        resolved.origin === configured.origin &&
+        resolved.pathname === '/' &&
+        configured.pathname !== '/'
+      ) {
+        resolved.pathname = configured.pathname;
+        resolvedBaseUrl = normalizeBaseUrl(resolved.toString())!;
+      }
+    }
     return {
-      baseUrl: normalizeBaseUrl(payload.apiBaseUrl) ?? payload.apiBaseUrl,
+      baseUrl: resolvedBaseUrl,
       routing: payload,
     };
   }

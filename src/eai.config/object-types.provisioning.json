@@ -2,14 +2,17 @@
   {
     "tenantKey": "vending-machine-app",
     "declaredBackends": [
-      "postgresql"
+      "postgresql",
+      "blob"
     ],
     "objectTypesByBackend": {
       "postgresql": [
         "Record"
       ],
       "documentdb": [],
-      "blob": [],
+      "blob": [
+        "OnboardingDocument"
+      ],
       "search": []
     },
     "objectTypeIdentifiersByBackend": {
@@ -20,15 +23,22 @@
         }
       ],
       "documentdb": [],
-      "blob": [],
+      "blob": [
+        {
+          "name": "OnboardingDocument",
+          "slug": "onboarding-document"
+        }
+      ],
       "search": []
     },
     "provision": {
       "postgresql": true,
       "documentdb": false,
-      "blob": false,
+      "blob": true,
       "search": false
     },
-    "notes": []
+    "notes": [
+      "Blob object types require Blob Storage plus PostgreSQL shadow records for metadata, links, history, and aggregate/list behavior."
+    ]
   }
 ]

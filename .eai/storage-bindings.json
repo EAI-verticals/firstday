@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "eai app provision",
+  "generatedAt": "2026-09-24T06:07:53.596Z",
+  "tenantId": "dce9373e-dfbc-e9bb-4ea9-d3ad7caa7d71",
+  "appKey": "vending-machine-app",
+  "aliases": {
+    "blob": [
+      "tenant-blob"
+    ],
+    "search": [
+      "tenant-search"
+    ],
+    "documentdb": [
+      "tenant-documentdb"
+    ],
+    "postgresql": [
+      "tenant-postgres"
+    ]
+  },
+  "storageNamePrefixes": {
+    "sql": "d3ad7caa7d71_vending_machine_app_",
+    "documentdb": "d3ad7caa7d71_vending_machine_app_",
+    "blob": "d3ad7caa7d71-vending-machine-app-",
+    "search": "d3ad7caa7d71-vending-machine-app-"
+  },
+  "source": {
+    "provisioningJobId": "app-prov-05ab3fc00698"
+  }
+}

@@ -262,6 +262,7 @@ export interface ChatMessage {
   ai_config?: Record<string, unknown>;
   vertical_key?: string;
   use_context_enrichment?: boolean;
+  include_citations?: boolean;
   integrations?: Array<Record<string, unknown>>;
   document_scope?: 'all' | 'kb_only' | 'br_only' | 'kb_and_br' | 'none';
   business_request_id?: string;
@@ -290,6 +291,7 @@ export interface ChatStreamOptions {
   ai_config?: Record<string, unknown>;
   vertical_key?: string;
   use_context_enrichment?: boolean;
+  include_citations?: boolean;
   integrations?: Array<Record<string, unknown>>;
   document_scope?: 'all' | 'kb_only' | 'br_only' | 'kb_and_br' | 'none';
   business_request_id?: string;

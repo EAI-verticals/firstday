@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import Script from 'next/script';
 
 import './globals.css';
+import './firstday.css';
 import { Providers } from './providers';
 import { tenantConfigs } from '@/eai.config';
 
@@ -15,8 +16,9 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: 'EAI App Template',
-  description: 'Enterprise AI application template',
+  title: 'Firstday — Your onboarding workspace',
+  description:
+    'A confident start: understand your workplace, prepare your documents, and complete onboarding.',
 };
 
 export default async function RootLayout({
@@ -30,15 +32,17 @@ export default async function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
-        <link rel='icon' href='/favicon.ico' sizes='any' />
+        <link
+          rel='icon'
+          href={`${(process.env.NEXT_PUBLIC_APP_BASE_PATH || '').replace(/\/$/, '')}/firstday-logo.svg?v=sunrise`}
+          type='image/svg+xml'
+        />
         <Script id='init' nonce={nonce} strategy='afterInteractive'>
           {`console.log("Nonce is attached securely!")`}
         </Script>
       </head>
       <body className={`${geistSans.variable} antialiased`}>
-        <Providers tenants={tenantConfigs}>
-          {children}
-        </Providers>
+        <Providers tenants={tenantConfigs}>{children}</Providers>
       </body>
     </html>
   );

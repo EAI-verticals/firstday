@@ -6,6 +6,37 @@ import {
 const originalEnv = process.env;
 
 describe('resolvePublicApiBaseUrl', () => {
+  it.each([
+    [
+      'https://api.au.example.com',
+      'https://api.au.example.com/public',
+      'https://api.au.example.com/public',
+    ],
+    [
+      'https://api.au.example.com/other',
+      'https://api.au.example.com/public',
+      'https://api.au.example.com/other',
+    ],
+    [
+      'https://api.eu.example.com',
+      'https://api.au.example.com/public',
+      'https://api.eu.example.com',
+    ],
+  ])(
+    'preserves only a same-origin gateway mount: %s',
+    async (apiBaseUrl, fallbackBaseUrl, expected) => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: 'resolved', apiBaseUrl }),
+      });
+      const result = await resolvePublicApiBaseUrl({
+        accessToken: 'test-token',
+        product: 'test-app',
+        fallbackBaseUrl,
+      });
+      expect(result.baseUrl).toBe(expected);
+    },
+  );
   beforeEach(() => {
     process.env = { ...originalEnv };
     process.env.ROUTING_BOOTSTRAP_PUBLIC_API_URL = 'https://api.example.com';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '@enterpriseaigroup/core/server';
+import { getServerAccessToken } from '@/lib/auth/server-access-token';
 import {
   resolvePublicApiBaseUrl,
   RoutingResolutionError,
@@ -18,10 +18,10 @@ interface TraceHeaderContext {
   requestId: string;
   traceparent: string | null;
   tracestate: string | null;
+  setCookies?: string[];
 }
 
-const TRACEPARENT_PATTERN =
-  /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/i;
+const TRACEPARENT_PATTERN = /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/i;
 
 function validTraceparent(traceparent: string | null): string | null {
   if (!traceparent) return null;
@@ -56,15 +56,24 @@ function deriveTraceHeaderContext(request: NextRequest): TraceHeaderContext {
 
 function stampTraceResponseHeaders(
   headers: Headers,
-  traceContext: Pick<TraceHeaderContext, 'correlationId' | 'requestId'>,
+  traceContext: Pick<
+    TraceHeaderContext,
+    'correlationId' | 'requestId' | 'setCookies'
+  >,
 ): Headers {
   headers.set('x-request-id', traceContext.requestId);
   headers.set('x-correlation-id', traceContext.correlationId);
+  traceContext.setCookies?.forEach((cookie) =>
+    headers.append('set-cookie', cookie),
+  );
   return headers;
 }
 
 function jsonTraceHeaders(
-  traceContext: Pick<TraceHeaderContext, 'correlationId' | 'requestId'>,
+  traceContext: Pick<
+    TraceHeaderContext,
+    'correlationId' | 'requestId' | 'setCookies'
+  >,
 ): Headers {
   return stampTraceResponseHeaders(
     new Headers({ 'Content-Type': 'application/json' }),
@@ -122,7 +131,10 @@ function isBinaryContentType(contentType: string | null): boolean {
   );
 }
 
-function resolveTenantScopedPlatformPath(path: string, tenantId?: string): string {
+function resolveTenantScopedPlatformPath(
+  path: string,
+  tenantId?: string,
+): string {
   if (!tenantId) return path;
 
   const encodedTenantId = encodeURIComponent(tenantId);
@@ -130,7 +142,9 @@ function resolveTenantScopedPlatformPath(path: string, tenantId?: string): strin
     return `v4/platform/tenants/${encodedTenantId}/users/by-email`;
   }
 
-  const membershipMatch = path.match(/^v4\/platform\/users\/([^/]+)\/memberships$/);
+  const membershipMatch = path.match(
+    /^v4\/platform\/users\/([^/]+)\/memberships$/,
+  );
   if (membershipMatch?.[1]) {
     return `v4/platform/tenants/${encodedTenantId}/users/${membershipMatch[1]}/memberships`;
   }
@@ -155,6 +169,7 @@ async function proxyRequest(
     // Ensure baseUrl ends with / and path doesn't start with /
     const headers = new Headers(request.headers);
     headers.delete('cookie');
+    headers.delete('set-cookie');
     headers.delete('host');
     headers.delete('tenant');
     headers.delete('x-tenant-id');
@@ -162,7 +177,9 @@ async function proxyRequest(
 
     // Tenant app data-plane access is always user-delegated. Background work
     // should run through a user-requested platform workflow, not a broad app key.
-    const token = await getAccessToken();
+    const userSession = await getServerAccessToken(request);
+    traceContext.setCookies = userSession.setCookies;
+    const token = userSession.accessToken;
 
     if (token) {
       const resolved = await resolvePublicApiBaseUrl({

@@ -1,6 +1,6 @@
 'use client';
 
-import { DemoPage } from '@enterpriseaigroup/demo';
+import { OnboardingApp } from '@/components/onboarding/onboarding-app';
 import { GeneratedWorkflowForm } from '@/components/generated-workflow/workflow-form';
 import type { GeneratedWorkflowRuntime } from '@/lib/generated-workflow/runtime-contract';
 
@@ -31,7 +31,7 @@ export function HomeClient({
     );
   }
   if (!generatedWorkflow) {
-    return <DemoPage />;
+    return <OnboardingApp />;
   }
   return (
     <div

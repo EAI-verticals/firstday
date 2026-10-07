@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 
 import { HomeClient } from './home-client';
 
-jest.mock('@enterpriseaigroup/demo', () => ({
-  DemoPage: () => <div>Demo fallback</div>,
+jest.mock('@/components/onboarding/onboarding-app', () => ({
+  OnboardingApp: () => <div>Onboarding workspace</div>,
 }));
 
 jest.mock('@/components/generated-workflow/workflow-form', () => ({
@@ -49,9 +49,9 @@ describe('HomeClient generated workflow runtime', () => {
     expect(screen.getByText('Acme Council')).toBeVisible();
   });
 
-  it('keeps the general template demo when no generated runtime is exported', () => {
+  it('renders onboarding when no generated runtime is exported', () => {
     render(<HomeClient />);
 
-    expect(screen.getByText('Demo fallback')).toBeVisible();
+    expect(screen.getByText('Onboarding workspace')).toBeVisible();
   });
 });

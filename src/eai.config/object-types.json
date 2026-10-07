@@ -1,6 +1,59 @@
 {
   "vending-machine-app": [
     {
+      "name": "OnboardingDocument",
+      "slug": "onboarding-document",
+      "displayName": "Onboarding document",
+      "description": "Employee-owned identity file and extracted fields for review.",
+      "authorization": {
+        "privacyClass": "owner_private"
+      },
+      "storageBackend": "blob",
+      "schemaVersion": 1,
+      "storageMetadataStatus": "ready",
+      "storageBinding": {
+        "blob": {
+          "storageAccountAlias": "tenant-blob",
+          "containerName": "d3ad7caa7d71-vending-machine-app-documents"
+        }
+      },
+      "properties": [
+        {
+          "name": "filename",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "documentTypeKey",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "file",
+          "type": "file",
+          "required": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "extractedFields",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "analysedAt",
+          "type": "date",
+          "required": false
+        }
+      ],
+      "linkTypes": [],
+      "actions": [],
+      "status": "published"
+    },
+    {
       "name": "Record",
       "slug": "record",
       "displayName": "Record",

@@ -11,5 +11,6 @@ export async function GET() {
   return NextResponse.json({
     name: session.user.name ?? null,
     email: session.user.email ?? null,
+    workspaceRole: session.user.workspaceRole,
   });
 }

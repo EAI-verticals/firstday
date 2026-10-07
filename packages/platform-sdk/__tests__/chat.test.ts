@@ -134,6 +134,7 @@ describe('ChatModule', () => {
         conversationId: 'conversation-123',
         params: {},
         document_scope: 'kb_only',
+        include_citations: true,
         tags: ['policy'],
         search_context: { jurisdiction: 'nsw' },
         tools: [{ type: 'function', function: { name: 'lookup' } }],
@@ -142,6 +143,7 @@ describe('ChatModule', () => {
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.document_scope).toBe('kb_only');
+      expect(body.include_citations).toBe(true);
       expect(body.tags).toEqual(['policy']);
       expect(body.search_context).toEqual({ jurisdiction: 'nsw' });
       expect(body.tools).toEqual([

@@ -17,8 +17,13 @@ jest.mock('next/server', () => ({
   },
 }));
 
-jest.mock('@enterpriseaigroup/core/server', () => ({
-  getAccessToken: () => mockGetAccessToken(),
+jest.mock('@/lib/auth/server-access-token', () => ({
+  getServerAccessToken: async () => ({
+    accessToken: await mockGetAccessToken(),
+    setCookies: [
+      'authjs.session-token=renewed; HttpOnly; Path=/; SameSite=Lax',
+    ],
+  }),
 }));
 
 jest.mock('@/lib/platform/session-resolve', () => {
@@ -232,4 +237,39 @@ describe('EAI proxy v4 route-family routing', () => {
     expect(headers.get('tenant')).toBe('tenant-a');
     expect(headers.get('x-tenant-id')).toBe('tenant-a');
   });
+});
+
+it('returns renewed shared-session cookies alongside the EAI response', async () => {
+  mockGetAccessToken.mockResolvedValue('renewed-user-token');
+  mockResolvePublicApiBaseUrl.mockResolvedValue({
+    baseUrl: 'https://api.example.test/public',
+  });
+  global.fetch = jest
+    .fn()
+    .mockResolvedValue({
+      body: null,
+      headers: new Headers(),
+      status: 200,
+      statusText: 'OK',
+    });
+  const response = await GET(
+    createRequest('v4/ai/chat', {
+      headers: {
+        cookie: 'authjs.session-token=private',
+        'set-cookie': 'authjs.session-token=untrusted',
+      },
+    }),
+    createContext('v4/ai/chat'),
+  );
+  expect(response.headers.get('set-cookie')).toContain('HttpOnly');
+  const upstreamHeaders = new Headers(
+    jest.mocked(fetch).mock.calls[0][1]?.headers,
+  );
+  expect(upstreamHeaders.get('cookie')).toBeNull();
+  expect(upstreamHeaders.get('set-cookie')).toBeNull();
+  expect(
+    new Headers(jest.mocked(fetch).mock.calls[0][1]?.headers).get(
+      'Authorization',
+    ),
+  ).toBe('Bearer renewed-user-token');
 });
