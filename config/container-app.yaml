@@ -1,0 +1,12 @@
+app:
+  resources:
+    cpu: '1.0'
+    memory: '2Gi'
+  scaling:
+    minReplicas: 1
+    maxReplicas: 3
+  display:
+    name: 'Firstday'
+    icon: '🌅'
+    description: 'Your onboarding workspace'
+    enabled: true

@@ -32,6 +32,29 @@ function readyEnv(): NodeJS.ProcessEnv {
 }
 
 describe('runtime readiness contract', () => {
+  it('accepts explicit empty base paths for a host-root deployment', () => {
+    const env = readyEnv();
+    env.APP_BASE_PATH = '';
+    env.NEXT_PUBLIC_APP_BASE_PATH = '';
+    expect(evaluateRuntimeReadiness(env).ok).toBe(true);
+  });
+
+  it('rejects omitted base path configuration', () => {
+    const env = readyEnv();
+    delete env.APP_BASE_PATH;
+    delete env.NEXT_PUBLIC_APP_BASE_PATH;
+    expect(evaluateRuntimeReadiness(env).checks).toContainEqual(
+      expect.objectContaining({
+        name: 'runtime-env',
+        ok: false,
+        missing: expect.arrayContaining([
+          'APP_BASE_PATH',
+          'NEXT_PUBLIC_APP_BASE_PATH',
+        ]),
+      }),
+    );
+  });
+
   it('returns ready when runtime config, secrets, tenant assignment, and object types are present', () => {
     const result = evaluateRuntimeReadiness(readyEnv());
 

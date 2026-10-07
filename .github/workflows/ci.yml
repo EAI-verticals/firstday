@@ -52,6 +52,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit:ci
 
+      - name: Demo deployment configuration tests
+        run: node --test tests/demo-deployment.test.mjs
+
       - name: Source-unknown handoff evidence test
         run: npm run test:source-unknown-evidence
 

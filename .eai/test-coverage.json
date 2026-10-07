@@ -1,7 +1,7 @@
 {
   "schema": "eai.test_coverage_map.v1",
   "repositories": {
-    "eai-app-template": {
+    "firstday": {
       "intentional_skipped_tests": [],
       "features": [
         {
@@ -95,6 +95,36 @@
               "path": "tests/cross-service/contracts/adminportal-adminapi/generated-workflow-public-routes.spec.ts"
             }
           ]
+        },
+        {
+          "id": "demo-container-deployment",
+          "description": "Firstday demo container configuration, host-root readiness, and configuration checks before deployment.",
+          "owned_paths": [
+            "Dockerfile",
+            ".dockerignore",
+            "config/container-app.yaml",
+            ".github/workflows/deploy-demo.yml",
+            "scripts/demo-deployment.mjs",
+            "src/lib/platform/readiness.ts"
+          ],
+          "config_keys": [
+            "EAI_TENANT_ID",
+            "EAI_WORKFLOW_ID",
+            "BASE_URL_PUBLIC_API",
+            "ROUTING_BOOTSTRAP_PUBLIC_API_URL",
+            "ENTRA_TENANT_NAME",
+            "ENTRA_TENANT_ID",
+            "ENTRA_CLIENT_ID",
+            "ENTRA_SCOPES",
+            "ONBOARDING_DOCUMENT_WORKFLOW_KEY",
+            "APP_BASE_PATH",
+            "NEXT_PUBLIC_APP_BASE_PATH"
+          ],
+          "required_repo_tests": [
+            "tests/demo-deployment.test.mjs",
+            "src/lib/platform/readiness.test.ts"
+          ],
+          "required_ci_checks": ["validate"]
         }
       ]
     }
