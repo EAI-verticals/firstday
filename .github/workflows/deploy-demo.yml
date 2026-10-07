@@ -1,78 +1,76 @@
-# Deploy Vending Machine App to Azure App Service
-# Triggers on push to main branch
-#
-# Required GitHub Secrets (in "demo" environment):
-#   AZUREAPPSERVICE_CLIENTID     — Azure AD app registration client ID
-#   AZUREAPPSERVICE_TENANTID     — Azure AD tenant ID
-#   AZUREAPPSERVICE_SUBSCRIPTIONID — Azure subscription ID
-#   AZURE_RESOURCE_GROUP         — Azure resource group name
-#   AZURE_WEBAPP_NAME            — Azure App Service name
-
-name: Deploy Vending Machine App
-
+name: Deploy Firstday Demo
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: firstday-demo-deployment
+  cancel-in-progress: false
 env:
-  APP_NAME: vending-machine-app
-  NODE_VERSION: '20.x'
-
+  EAI_TENANT_ID: ${{ vars.EAI_TENANT_ID }}
+  EAI_WORKFLOW_ID: ${{ vars.EAI_WORKFLOW_ID }}
+  BASE_URL_PUBLIC_API: ${{ vars.BASE_URL_PUBLIC_API }}
+  ROUTING_BOOTSTRAP_PUBLIC_API_URL: ${{ vars.ROUTING_BOOTSTRAP_PUBLIC_API_URL }}
+  ENTRA_TENANT_NAME: ${{ vars.ENTRA_TENANT_NAME }}
+  ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
+  ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+  ENTRA_SCOPES: ${{ vars.ENTRA_SCOPES }}
+  ONBOARDING_DOCUMENT_WORKFLOW_KEY: ${{ vars.ONBOARDING_DOCUMENT_WORKFLOW_KEY }}
 jobs:
-  build-and-deploy:
+  validate:
     runs-on: ubuntu-latest
-    environment: demo
-    permissions:
-      id-token: write
-      contents: read
-
+    env:
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      EAI_READINESS_PROBE_TOKEN: ${{ secrets.EAI_READINESS_PROBE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Object Types JSON
-        run: npm run build:object-types
-
-      - name: Build
-        run: npm run build
+          node-version: '22'
+      - run: node scripts/demo-deployment.mjs check
         env:
-          APP_BASE_PATH: /${{ env.APP_NAME }}
-
-      - name: Package standalone output
-        run: |
-          mkdir -p deploy/${{ env.APP_NAME }}
-          cp -r .next/standalone/. deploy/${{ env.APP_NAME }}/
-          cp -r .next/static deploy/${{ env.APP_NAME }}/.next/
-          cp -r public deploy/${{ env.APP_NAME }}/ 2>/dev/null || true
-          cd deploy && zip -r ../app-content.zip ${{ env.APP_NAME }}
-
-      - name: Azure Login
-        uses: azure/login@v2
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - run: npm ci --ignore-scripts
+        env:
+          CYPRESS_INSTALL_BINARY: '0'
+      - run: npm run test:unit:ci && npm run typecheck
+        env:
+          EAI_TENANT_ID: ''
+      - run: npm run build
+        env:
+          CYPRESS_INSTALL_BINARY: '0'
+          NEXT_PUBLIC_EAI_TENANT_ID: ${{ vars.EAI_TENANT_ID }}
+          NEXT_PUBLIC_APP_NAME: firstday
+          APP_BASE_PATH: ''
+          NEXT_PUBLIC_APP_BASE_PATH: ''
+      - run: node --test tests/demo-deployment.test.mjs
+  deploy:
+    needs: validate
+    uses: EAI-verticals/demo-infra/.github/workflows/deploy-container-app.yml@e5f81d20498619fb60dc68530501e1771c43a3db
+    with:
+      app-name: firstday
+      environment: dev
+      config-path: ./config/container-app.yaml
+      build-args: |
+        NEXT_PUBLIC_EAI_TENANT_ID=${{ vars.EAI_TENANT_ID }}
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  configure-and-verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      EAI_READINESS_PROBE_TOKEN: ${{ secrets.EAI_READINESS_PROBE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
-
-      - name: Deploy to Azure
-        run: |
-          az webapp deploy \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
-            --src-path app-content.zip \
-            --type zip \
-            --target-path /home/site/wwwroot/${{ env.APP_NAME }}
-
-      - name: Restart App Service
-        run: |
-          az webapp restart \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
-            --name ${{ secrets.AZURE_WEBAPP_NAME }}
+          node-version: '22'
+      - uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - run: node scripts/demo-deployment.mjs configure

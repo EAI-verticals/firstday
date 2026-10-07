@@ -75,8 +75,11 @@ function isHttpUrl(value: string | undefined): boolean {
 }
 
 function checkRuntimeEnv(env: NodeJS.ProcessEnv): ReadinessCheck {
+  const rootPathKeys = new Set(['APP_BASE_PATH', 'NEXT_PUBLIC_APP_BASE_PATH']);
   const missing = [
-    ...missingEnv(env, REQUIRED_RUNTIME_ENV),
+    ...REQUIRED_RUNTIME_ENV.filter((name) =>
+      rootPathKeys.has(name) ? env[name] === undefined : !env[name],
+    ),
     ...missingAnyEnv(env, [
       ['NEXT_PUBLIC_EAI_TENANT_ID', 'EAI_TENANT_ID'],
       ['EAI_PRODUCT_SLUG', 'EAI_APP_KEY'],
