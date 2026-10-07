@@ -20,6 +20,10 @@ env:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      EAI_READINESS_PROBE_TOKEN: ${{ secrets.EAI_READINESS_PROBE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,10 +32,6 @@ jobs:
       - run: node scripts/demo-deployment.mjs check
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      - uses: azure/login@v3
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - run: node scripts/demo-deployment.mjs check-secrets
       - run: npm ci --ignore-scripts && npm run test:unit:ci && npm run typecheck && npm run build
         env:
           CYPRESS_INSTALL_BINARY: '0'
@@ -55,6 +55,10 @@ jobs:
   configure-and-verify:
     needs: deploy
     runs-on: ubuntu-latest
+    env:
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+      EAI_READINESS_PROBE_TOKEN: ${{ secrets.EAI_READINESS_PROBE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

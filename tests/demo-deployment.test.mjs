@@ -3,7 +3,20 @@ import test from 'node:test';
 import {
   configuration,
   validateCredential,
+  runtimeSecrets,
 } from '../scripts/demo-deployment.mjs';
+
+test('missing runtime secrets stop configuration without exposing values', () => {
+  assert.throws(
+    () => runtimeSecrets({ AUTH_SECRET: 'do-not-display' }),
+    (error) => {
+      assert.match(error.message, /ENTRA_CLIENT_SECRET/);
+      assert.match(error.message, /EAI_READINESS_PROBE_TOKEN/);
+      assert.ok(!error.message.includes('do-not-display'));
+      return true;
+    },
+  );
+});
 
 const approved = {
   EAI_TENANT_ID: 'approved-tenant',

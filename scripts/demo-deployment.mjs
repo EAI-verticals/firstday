@@ -13,7 +13,6 @@ const required = [
   'ENTRA_SCOPES',
   'ONBOARDING_DOCUMENT_WORKFLOW_KEY',
 ];
-const vault = 'https://kv-demo-eai.vault.azure.net';
 const subscription = '3001a4e4-fcd1-46e5-bfd9-e04ba193f65d';
 const scope = [
   '--subscription',
@@ -109,58 +108,48 @@ export function validateCredential(value) {
   }
 }
 
+/** Reads app-specific GitHub secrets; missing-secret errors expose names only. */
+export function runtimeSecrets(env) {
+  const names = {
+    AUTH_SECRET: 'auth-secret',
+    ENTRA_CLIENT_SECRET: 'entra-client-secret',
+    EAI_READINESS_PROBE_TOKEN: 'readiness-probe-token',
+  };
+  const missing = Object.keys(names).filter((name) => !env[name]);
+  if (missing.length)
+    throw new Error(`Missing GitHub secrets: ${missing.join(', ')}`);
+  return Object.fromEntries(
+    Object.entries(names).map(([key, name]) => [name, env[key]]),
+  );
+}
+
 async function main() {
   const config = configuration(process.env);
   if (process.argv[2] === 'check') {
     if (!process.env.AZURE_CREDENTIALS)
       throw new Error('Missing GitHub secret: AZURE_CREDENTIALS');
     validateCredential(process.env.AZURE_CREDENTIALS);
+    runtimeSecrets(process.env);
     console.log('Required deployment configuration is present');
     return;
   }
-  if (!['check-secrets', 'configure'].includes(process.argv[2]))
-    throw new Error('Expected check, check-secrets, or configure');
-  const secretNames = [
-    'firstday-auth-secret',
-    'firstday-entra-client-secret',
-    'firstday-readiness-probe-token',
-  ];
-  for (const name of secretNames) {
-    azure([
-      'keyvault',
-      'secret',
-      'show',
-      '--vault-name',
-      'kv-demo-eai',
-      '--name',
-      name,
-      '--query',
-      'id',
-      '-o',
-      'tsv',
-    ]);
-  }
-  if (process.argv[2] === 'check-secrets') {
-    console.log('Required Key Vault secret references are accessible');
-    return;
-  }
+  if (process.argv[2] !== 'configure')
+    throw new Error('Expected check or configure');
+  const secrets = runtimeSecrets(process.env);
   azure([
     'containerapp',
     'secret',
     'set',
     ...scope,
     '--secrets',
-    ...secretNames.map(
-      (name) =>
-        `${name}=keyvaultref:${vault}/secrets/${name},identityref:system`,
-    ),
+    ...Object.entries(secrets).map(([name, value]) => `${name}=${value}`),
     '-o',
     'none',
   ]);
   const references = {
-    AUTH_SECRET: secretNames[0],
-    ENTRA_CLIENT_SECRET: secretNames[1],
-    EAI_READINESS_PROBE_TOKEN: secretNames[2],
+    AUTH_SECRET: 'auth-secret',
+    ENTRA_CLIENT_SECRET: 'entra-client-secret',
+    EAI_READINESS_PROBE_TOKEN: 'readiness-probe-token',
   };
   azure([
     'containerapp',
@@ -174,19 +163,7 @@ async function main() {
     '-o',
     'none',
   ]);
-  const token = azure([
-    'keyvault',
-    'secret',
-    'show',
-    '--vault-name',
-    'kv-demo-eai',
-    '--name',
-    secretNames[2],
-    '--query',
-    'value',
-    '-o',
-    'tsv',
-  ]);
+  const token = secrets['readiness-probe-token'];
   const origin = 'https://firstday.demo.eaigroup.ai';
   let ready = false;
   for (let attempt = 0; attempt < 12; attempt++) {
