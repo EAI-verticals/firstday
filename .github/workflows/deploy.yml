@@ -1,0 +1,26 @@
+name: Deploy Firstday to demo-infra
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: firstday-demo-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: EAI-verticals/demo-infra/.github/workflows/deploy-container-app.yml@main
+    with:
+      app-name: firstday
+      dockerfile-path: ./Dockerfile
+      config-path: ./container-app.yaml
+      environment: dev
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

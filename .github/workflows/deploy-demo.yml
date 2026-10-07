@@ -1,5 +1,5 @@
 # Deploy Vending Machine App to Azure App Service
-# Triggers on push to main branch
+# Legacy App Service deployment. Run manually only for an approved App Service target.
 #
 # Required GitHub Secrets (in "demo" environment):
 #   AZUREAPPSERVICE_CLIENTID     — Azure AD app registration client ID
@@ -11,8 +11,6 @@
 name: Deploy Vending Machine App
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 env:

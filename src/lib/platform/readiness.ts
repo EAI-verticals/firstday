@@ -49,7 +49,13 @@ function splitTenantKeys(env: NodeJS.ProcessEnv): string[] {
 }
 
 function missingEnv(env: NodeJS.ProcessEnv, names: string[]): string[] {
-  return names.filter((name) => !env[name]);
+  return names.filter((name) => {
+    // An explicitly empty base path is valid for an app hosted at its own domain.
+    if (name === 'APP_BASE_PATH' || name === 'NEXT_PUBLIC_APP_BASE_PATH') {
+      return env[name] === undefined;
+    }
+    return !env[name];
+  });
 }
 
 function missingAnyEnv(env: NodeJS.ProcessEnv, groups: string[][]): string[] {
